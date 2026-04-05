@@ -192,8 +192,8 @@ void benchmark_csr_mat_coo_vec_mul(size_t n) {
 int main() {
     srand(12345);
 
-    size_t N = 10000;      // N for dense mat mul
-    size_t N_large = 1000000; // N for vector operations
+    size_t N = 100;      // N for dense mat mul
+    size_t N_large = 10000; // N for vector operations
 
     benchmark_dense_mat_mul(N);
     benchmark_csr_mat_dense_vec_mul(N_large);
