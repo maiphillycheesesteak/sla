@@ -210,6 +210,7 @@ SLA_DECLARE_ELEM_OPS(sla_c64, sla_c64)
     PREFIX##_dense_vec PREFIX##_dense_mat_vec_mul(PREFIX##_dense_mat a, PREFIX##_dense_vec x); \
     PREFIX##_dense_mat PREFIX##_dense_mat_mul_mat(PREFIX##_dense_mat a, PREFIX##_dense_mat b); \
     PREFIX##_dense_vec PREFIX##_csr_mat_vec_mul(PREFIX##_csr_mat a, PREFIX##_dense_vec x); \
+    PREFIX##_dense_vec PREFIX##_csr_mat_coo_vec_mul(PREFIX##_csr_mat a, PREFIX##_coo_vec x); \
     PREFIX##_dense_mat PREFIX##_csr_mat_dense_mat_mul(PREFIX##_csr_mat a, PREFIX##_dense_mat b); \
     PREFIX##_csr_mat PREFIX##_csr_mat_mul_csr_mat(PREFIX##_csr_mat a, PREFIX##_csr_mat b); \
     PREFIX##_dense_vec PREFIX##_dia_mat_vec_mul(PREFIX##_dia_mat a, PREFIX##_dense_vec x); \
@@ -405,40 +406,52 @@ SLA_DECLARE_MUL_OPS(sla_c64, sla_c64)
         default: sla_c64_dense_mat_mul), \
     sla_f32_csr_mat: _Generic((b), \
         sla_f32_dense_vec: sla_f32_csr_mat_vec_mul, \
+        sla_f32_coo_vec: sla_f32_csr_mat_coo_vec_mul, \
         sla_f32_dense_mat: sla_f32_csr_mat_dense_mat_mul, \
         sla_f32_csr_mat: sla_f32_csr_mat_mul_csr_mat, \
-        sla_f32_dia_mat: sla_f32_csr_mat_mul_dia_mat), \
+        sla_f32_dia_mat: sla_f32_csr_mat_mul_dia_mat, \
+        default: sla_f32_csr_mat_vec_mul), \
     sla_f64_csr_mat: _Generic((b), \
         sla_f64_dense_vec: sla_f64_csr_mat_vec_mul, \
+        sla_f64_coo_vec: sla_f64_csr_mat_coo_vec_mul, \
         sla_f64_dense_mat: sla_f64_csr_mat_dense_mat_mul, \
         sla_f64_csr_mat: sla_f64_csr_mat_mul_csr_mat, \
-        sla_f64_dia_mat: sla_f64_csr_mat_mul_dia_mat), \
+        sla_f64_dia_mat: sla_f64_csr_mat_mul_dia_mat, \
+        default: sla_f64_csr_mat_vec_mul), \
     sla_c32_csr_mat: _Generic((b), \
         sla_c32_dense_vec: sla_c32_csr_mat_vec_mul, \
+        sla_c32_coo_vec: sla_c32_csr_mat_coo_vec_mul, \
         sla_c32_dense_mat: sla_c32_csr_mat_dense_mat_mul, \
         sla_c32_csr_mat: sla_c32_csr_mat_mul_csr_mat, \
-        sla_c32_dia_mat: sla_c32_csr_mat_mul_dia_mat), \
+        sla_c32_dia_mat: sla_c32_csr_mat_mul_dia_mat, \
+        default: sla_c32_csr_mat_vec_mul), \
     sla_c64_csr_mat: _Generic((b), \
         sla_c64_dense_vec: sla_c64_csr_mat_vec_mul, \
+        sla_c64_coo_vec: sla_c64_csr_mat_coo_vec_mul, \
         sla_c64_dense_mat: sla_c64_csr_mat_dense_mat_mul, \
         sla_c64_csr_mat: sla_c64_csr_mat_mul_csr_mat, \
-        sla_c64_dia_mat: sla_c64_csr_mat_mul_dia_mat), \
+        sla_c64_dia_mat: sla_c64_csr_mat_mul_dia_mat, \
+        default: sla_c64_csr_mat_vec_mul), \
     sla_f32_dia_mat: _Generic((b), \
         sla_f32_dense_vec: sla_f32_dia_mat_vec_mul, \
         sla_f32_dense_mat: sla_f32_dia_mat_dense_mat_mul, \
-        sla_f32_dia_mat: sla_f32_dia_mat_mul_dia_mat), \
+        sla_f32_dia_mat: sla_f32_dia_mat_mul_dia_mat, \
+        default: sla_f32_dia_mat_vec_mul), \
     sla_f64_dia_mat: _Generic((b), \
         sla_f64_dense_vec: sla_f64_dia_mat_vec_mul, \
         sla_f64_dense_mat: sla_f64_dia_mat_dense_mat_mul, \
-        sla_f64_dia_mat: sla_f64_dia_mat_mul_dia_mat), \
+        sla_f64_dia_mat: sla_f64_dia_mat_mul_dia_mat, \
+        default: sla_f64_dia_mat_vec_mul), \
     sla_c32_dia_mat: _Generic((b), \
         sla_c32_dense_vec: sla_c32_dia_mat_vec_mul, \
         sla_c32_dense_mat: sla_c32_dia_mat_dense_mat_mul, \
-        sla_c32_dia_mat: sla_c32_dia_mat_mul_dia_mat), \
+        sla_c32_dia_mat: sla_c32_dia_mat_mul_dia_mat, \
+        default: sla_c32_dia_mat_vec_mul), \
     sla_c64_dia_mat: _Generic((b), \
         sla_c64_dense_vec: sla_c64_dia_mat_vec_mul, \
         sla_c64_dense_mat: sla_c64_dia_mat_dense_mat_mul, \
-        sla_c64_dia_mat: sla_c64_dia_mat_mul_dia_mat) \
+        sla_c64_dia_mat: sla_c64_dia_mat_mul_dia_mat, \
+        default: sla_c64_dia_mat_vec_mul) \
 )(a, b)
 
 #endif // C11
@@ -689,6 +702,25 @@ SLA_IMPLEMENT_ELEM_OPS(sla_c64, sla_c64, SLA_ADD_C64, SLA_SUB_C64, SLA_MUL_C64, 
             TYPE sum = ZERO; \
             for (size_t j = 0; j < a.cols; ++j) { \
                 sum = ADD_MACRO(sum, MUL_MACRO(a.data[i * a.cols + j], x.data[j])); \
+            } \
+            res.data[i] = sum; \
+        } \
+        return res; \
+    } \
+    PREFIX##_dense_vec PREFIX##_csr_mat_coo_vec_mul(PREFIX##_csr_mat a, PREFIX##_coo_vec x) { \
+        PREFIX##_dense_vec res = PREFIX##_dense_vec_alloc(a.rows); \
+        PREFIX##_dense_vec_map_to_device(&res); \
+        _Pragma("omp target teams distribute parallel for map(to: a.row_ptr[0:a.rows+1], a.col_indices[0:a.nnz], a.values[0:a.nnz], x.indices[0:x.nnz], x.values[0:x.nnz]) map(alloc: res.data[0:a.rows])") \
+        for (size_t i = 0; i < a.rows; ++i) { \
+            TYPE sum = ZERO; \
+            for (size_t j = a.row_ptr[i]; j < a.row_ptr[i+1]; ++j) { \
+                size_t col = a.col_indices[j]; \
+                for (size_t k = 0; k < x.nnz; ++k) { \
+                    if (x.indices[k] == col) { \
+                        sum = ADD_MACRO(sum, MUL_MACRO(a.values[j], x.values[k])); \
+                        break; \
+                    } \
+                } \
             } \
             res.data[i] = sum; \
         } \
