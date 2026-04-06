@@ -507,6 +507,10 @@ SLA_DECLARE_MUL_OPS(sla_c64, sla_c64)
         PREFIX##_dense_mat m; \
         m.rows = rows; \
         m.cols = cols; \
+        if (rows > 0 && cols > SIZE_MAX / rows) { \
+            m.data = NULL; \
+            return m; \
+        } \
         m.data = (TYPE*)calloc(rows * cols, sizeof(TYPE)); \
         return m; \
     } \
@@ -543,6 +547,11 @@ SLA_DECLARE_MUL_OPS(sla_c64, sla_c64)
         m.cols = cols; \
         m.num_diags = num_diags; \
         size_t max_diag_len = (rows < cols) ? rows : cols; \
+        if (num_diags > 0 && max_diag_len > SIZE_MAX / num_diags) { \
+            m.data = NULL; \
+            m.offsets = NULL; \
+            return m; \
+        } \
         m.data = (TYPE*)calloc(num_diags * max_diag_len, sizeof(TYPE)); \
         m.offsets = (int*)calloc(num_diags, sizeof(int)); \
         return m; \
