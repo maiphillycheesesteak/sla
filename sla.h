@@ -460,6 +460,14 @@ SLA_DECLARE_MUL_OPS(sla_c64, sla_c64)
 
 #ifdef SLA_IMPLEMENTATION
 
+static int sla_int_compare(const void *a, const void *b) {
+    int arg1 = *(const int*)a;
+    int arg2 = *(const int*)b;
+    if (arg1 < arg2) return -1;
+    if (arg1 > arg2) return 1;
+    return 0;
+}
+
 // ============================================================================
 // OpenMP Reductions for Complex Types
 // ============================================================================
@@ -901,13 +909,7 @@ SLA_IMPLEMENT_ELEM_OPS(sla_c64, sla_c64, SLA_ADD_C64, SLA_SUB_C64, SLA_MUL_C64, 
             } \
         } \
         /* Sort and unique offsets */ \
-        for(size_t i=0; i<k; ++i) { \
-            for(size_t j=i+1; j<k; ++j) { \
-                if(all_offsets[i] > all_offsets[j]) { \
-                    int tmp = all_offsets[i]; all_offsets[i] = all_offsets[j]; all_offsets[j] = tmp; \
-                } \
-            } \
-        } \
+        qsort(all_offsets, k, sizeof(int), sla_int_compare); \
         size_t unique_diags = 0; \
         if(k > 0) { \
             unique_diags = 1; \
